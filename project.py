@@ -4,16 +4,18 @@ import scipy
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import ruptures as rpt
 import itertools
 import os
 import statistics
 import natsort
 from matplotlib import pyplot as plt
 
+
 def separated_chr(df):
     subdf_list = []
     for i in chrom_list:
-        subdf_list.append(df[df['Chromosome'] == i])
+        subdf_list.append(df[df['Chromosome'] == i])    
     return subdf_list
 
 def correlations(df):
@@ -178,7 +180,7 @@ final_df.drop('Gene_version', axis=1, inplace=True)
 final_df = final_df.drop(final_df.columns[1229], axis=1)
 final_df.reset_index(drop= True, inplace = True)
 final_df = final_df.iloc[natsort.index_humansorted(final_df.Chromosome)]
-
+#final_df.to_csv('opos thes pes to.csv', sep = '\t')
 #Creating a list with separated chromosomes
 
 subdf_list = separated_chr(final_df)
@@ -272,7 +274,7 @@ for i in range(len(sample_df['primary_diagnosis'])):
 
 # Match each patient with his primary diagnosis
 sample_df.to_csv('final_sample_df.csv', index=False)
-
+final_df = pd.read_csv(r'/media/gina/9A53-2BCF/gina/final_df.csv')
 infiltrating_duct_carcinoma_df =  pd.read_csv(r'/media/gina/9A53-2BCF/gina/final_sample_df.csv')
 lobular_carcinoma_df = pd.read_csv(r'/media/gina/9A53-2BCF/gina/final_sample_df.csv')
 
@@ -343,11 +345,13 @@ for chromosome_corr in infiltrating_corr:
 lob_subdf = separated_chr(lobular_carcinoma_counts_df)
 inf_subdf = separated_chr(infiltrating_duct_carcinoma_counts_df)
 
+lobular_carcinoma_counts_df.to_csv('lobular', sep = '\t')
+infiltrating_duct_carcinoma_counts_df.to_csv('infiltrating', sep='\t')
 #Variance
 lobular_variance = variance(lobular_carcinoma_counts_df)
 infiltrating_variance = variance(infiltrating_duct_carcinoma_counts_df)
 
-#Boxplots correlation
+#Boxplots for lobular correlations
 data = pd.DataFrame((lob_average_cor_list[0]), columns = ['Chr1'])
 data['Chr1'] = data['Chr1'].fillna(0)
 for i in range(len(lob_average_cor_list)):  
@@ -367,26 +371,40 @@ data_melted = data_melted.rename(columns={'variable': 'Chromosomes', 'value': 'C
 sns.set_style("whitegrid")
 sns.despine(left=True)
 sns.set(rc={'figure.figsize':(15.7,8.27)})
-sns.boxplot(x='Chromosomes', y='Correlation', data=data_melted,linewidth=1) 
+sns.boxplot(x='Chromosomes', y='Correlation', data=data_melted,linewidth=1, showfliers = False).set_title('Lobular Carcinoma Correlations') 
 
-#lineplots for variance and correlation
-   
-   plt.boxplot(data['Correlation'])
-   plt.show()
-   data = pd.DataFrame(lob_subdf[i]["Start"])
-   
-   data = pd.DataFrame(lob_subdf_list[i]["Start"])    
-   data['Variance'] = lobular_variance[i]
-   data_melted = data_melted.rename(columns={'variable': 'Start Sights', 'value': 'Correlation'})
+#Boxplots for infiltrating correlations
+
+data = pd.DataFrame((inf_average_cor_list[0]), columns = ['Chr1'])
+data['Chr1'] = data['Chr1'].fillna(0)
+for i in range(len(inf_average_cor_list)):  
+    if i == 0 :
+        continue
+    else:
+        
+        data['Chr' + str(i + 1)] = pd.Series(inf_average_cor_list[i])
+        data['Chr' + str(i + 1)] = data['Chr' + str(i + 1)].fillna(0)
+
+data = data.rename(columns={'Chr23': 'ChrX', 'Chr24': 'ChrY', 'Chr25': 'MT'})
+        
+palette = ['#FF2709', '#09FF10', '#0030D7', '#FA70B5']
+data_melted = pd.melt(data) 
+data_melted = data_melted.rename(columns={'variable': 'Chromosomes', 'value': 'Correlation'})
+
+sns.set_style("whitegrid")
+sns.despine(left=True)
+sns.set(rc={'figure.figsize':(15.7,8.27)})
+sns.boxplot(x='Chromosomes', y='Correlation', data=data_melted,linewidth=1, showfliers = False).set_title('Infiltrating Duct Carcinoma Correlations') 
+
+
+#lineplots for lobular correlation
 
 
 for i in range(len(lob_average_cor_list)):  
     
     data = pd.DataFrame(lob_subdf[i]["Start"])
     data['Correlation'] = lob_average_cor_list[i]
-    #data_melted = pd.melt(data) 
-    #data_melted = data_melted.rename(columns={'variable': 'Start Sights', 'value': 'Correlation'})
-    plt.figure()
+    figure = plt.figure()
     if i <= 21:
         sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome ' + str(i + 1)))
     elif i == 22:
@@ -396,8 +414,68 @@ for i in range(len(lob_average_cor_list)):
     elif i == 24: 
         sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('MT'))
         
-    
+    plt.savefig('CHR' + str(i +1) + ".png")
   
+
+
+for i in range(len(inf_average_cor_list)):  
+    
+    data = pd.DataFrame(inf_subdf[i]["Start"])
+    data['Correlation'] = inf_average_cor_list[i]
+    figure = plt.figure()
+    if i <= 21:
+        sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome ' + str(i + 1)))
+    elif i == 22:
+        sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome X'))
+    elif i == 23:    
+        sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome Y'))
+    elif i == 24: 
+        sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('MT'))
+    
+    plt.savefig('CHR' + str(i +1) + ".png")
+
+
+total_bin_list = []
+for chromosome in inf_subdf:
+    bin_list =[]
+    pace = 10000
+    for i in range(len(chromosome)):
+        if i == 0:
+            start = chromosome['Start'][i]
+            bin_list.append(start)
+        elif chromosome['Start'][i] <= start + pace:
+            bin_list.append(start)
+        
+        elif chromosome['Start'][i] > start + pace:
+            bin_list.append(chromosome['Start'][i])
+            start = chromosome['Start'][i]
+
+    total_bin_list.append(bin_list)  
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
