@@ -369,7 +369,7 @@ def prev():
     sns.set(rc={'figure.figsize':(15.7,8.27)})
     sns.boxplot(x='Chromosomes', y='Correlation', data=data_melted,linewidth=1, showfliers = False).set_title('Lobular Carcinoma Correlations')
 
-    #Boxplots for infiltrating correlations
+    #Boxplot for infiltrating correlations
 
     data = pd.DataFrame((inf_average_cor_list[0]), columns = ['Chr1'])
     data['Chr1'] = data['Chr1'].fillna(0)
@@ -392,7 +392,52 @@ def prev():
     sns.set(rc={'figure.figsize':(15.7,8.27)})
     sns.boxplot(x='Chromosomes', y='Correlation', data=data_melted,linewidth=1, showfliers = False).set_title('Infiltrating Duct Carcinoma Correlations')
 
+    # BOXPLOT FOR LOBULAR VARIANCE 
+    data = pd.DataFrame((lobular_variance[0]), columns = ['Chr1'])
+    data['Chr1'] = data['Chr1'].fillna(0)
+    for i in range(len(lobular_variance)):
+        if i == 0 :
+            continue
+        else:
 
+            data['Chr' + str(i + 1)] = pd.Series(lobular_variance[i])
+            data['Chr' + str(i + 1)] = data['Chr' + str(i + 1)].fillna(0)
+
+    data = data.rename(columns={'Chr23': 'ChrX', 'Chr24': 'ChrY', 'Chr25': 'MT'})
+
+    palette = ['#FF2709', '#09FF10', '#0030D7', '#FA70B5']
+    data_melted = pd.melt(data)
+    data_melted = data_melted.rename(columns={'variable': 'Chromosomes', 'value': 'Variance'})
+
+    sns.set_style("whitegrid")
+    sns.despine(left=True)
+    sns.set(rc={'figure.figsize':(15.7,8.27)})
+    sns.boxplot(x='Chromosomes', y='Variance', data=data_melted,linewidth=1, showfliers = False).set_title('Lobular Carcinoma Variance')
+    
+    #BOXPLOT FOR INFILTRATING VARIANCE
+                                               
+    data = pd.DataFrame((infiltrating_variance[0]), columns = ['Chr1'])
+    data['Chr1'] = data['Chr1'].fillna(0)
+    for i in range(len(infiltrating_variance)):
+        if i == 0 :
+            continue
+        else:
+
+            data['Chr' + str(i + 1)] = pd.Series(infiltrating_variance[i])
+            data['Chr' + str(i + 1)] = data['Chr' + str(i + 1)].fillna(0)
+
+    data = data.rename(columns={'Chr23': 'ChrX', 'Chr24': 'ChrY', 'Chr25': 'MT'})
+
+    palette = ['#FF2709', '#09FF10', '#0030D7', '#FA70B5']
+    data_melted = pd.melt(data)
+    data_melted = data_melted.rename(columns={'variable': 'Chromosomes', 'value': 'Variance'})
+
+    sns.set_style("whitegrid")
+    sns.despine(left=True)
+    sns.set(rc={'figure.figsize':(15.7,8.27)})
+    sns.boxplot(x='Chromosomes', y='Variance', data=data_melted,linewidth=1, showfliers = False).set_title('Infiltrating Duct Carcinoma Variance')
+                                                           
+    
     #lineplots for lobular correlation
 
 
@@ -497,8 +542,8 @@ def segment(df):
 ########################################################################################################################################
 
 cancers = [None, None]
-cancers[0] = pd.read_csv(os.getcwd() + '/infiltrating.csv', dtype={'Chromosome': 'str'})
-cancers[1] = pd.read_csv(os.getcwd() + '/lobular.csv',      dtype={'Chromosome': 'str'})
+cancers[0] = pd.read_csv(os.getcwd() + '/infiltrating.csv', dtype={'Chromosome': 'str'}, sep = '\t')
+cancers[1] = pd.read_csv(os.getcwd() + '/lobular.csv',      dtype={'Chromosome': 'str'}, sep = '\t')
 
 gp_chrom = []
 for df in cancers:
@@ -517,9 +562,41 @@ for i in enumerate(ttests):
     print(type(i))
 
 sig_pv = []
+unsig_pv = []
 for ch_i, ch in enumerate(ttests):
     for pv_i, pv in enumerate(ch[1]):
         if pv <= 0.05:
             sig_pv.append((ch_i, pv_i, ch[0][pv_i]))
+        else:
+            unsig_pv.append((ch_i, pv_i, ch[0][pv_i]))
+
+   
+   
+   data = pd.DataFrame((sig_pv[0][2]), columns = [sig_pv[0][1]])
+    data['ch'] = data['ch'].fillna(0)
+    data['pvalue'] = unsig_pv[0][2]
+    
+for i in enumerate(sig_pv[0]):
+    
+    data = data.rename(columns={'variable': 'Segment', 'value': 'P-value'})
+    
+    sns.set_style("whitegrid")
+    sns.despine(left=True)
+
+    sns.set(rc={'figure.figsize':(15.7,8.27)})
+    palette = ['#FF2709', '#09FF10', '#0030D7', '#FA70B5']
+    sns.scatterplot(data = data , x = "Segmnet", y = "P-value")
+
+ plt.show()
+
+data = pd.DataFrame(sig_pv[0][2])
+
+for i in enumerate(sig_pv):
+    if sig_pv[0] = 0:
+        data = pd.DataFrame(sig_pv[i][])
+        data['Correlation'] = lob_average_cor_list[i]
+
+
+
 
 
