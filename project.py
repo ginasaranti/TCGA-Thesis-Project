@@ -69,7 +69,7 @@ def prev():
     counts = ['']
 
 
-    #Names list was created initially to check if the number of gene ids is the same in all files
+    # Names list was created initially to check if the number of gene ids is the same in all files
 
     for file in onlyfiles:
         df = pd.read_csv(file, sep='\t', header = None, names = ["Gene_version", "Counts"])
@@ -78,8 +78,8 @@ def prev():
     names = names[1:]
 
 
-    #All files contain 60483 genes so I proceed to the dataframe
-    #Create TCGA dataframe
+    # All files contain 60483 genes so I proceed to the dataframe
+    # Create TCGA dataframe
 
     for i in range(len(onlyfiles)):
         if i == 0 :
@@ -92,25 +92,25 @@ def prev():
     onlyfiles.insert(0, 'Gene_version')
     tcga_df.columns = onlyfiles
 
-    #Bring only files to its previous state
+    # Bring only files to its previous state
 
     onlyfiles = [f for f in listdir('/media/gina/9A53-2BCF/gina/all_files') if isfile(join('/media/gina/9A53-2BCF/gina/all_files', f))]
 
     tcga_gene_version = tcga_df['Gene_version'].to_list()
 
-    #FIND GENE COORDINATES
+    # FIND GENE COORDINATES
 
-    #New dataframe from .gtf File
+    # New dataframe from .gtf File
 
     gencode = pd.read_table("/media/gina/9A53-2BCF/gina/Homo_sapiens.GRCh38.104.gtf", comment="#", sep = "\t", names = ['seqname', 'source', 'feature', 'start' , 'end', 'score', 'strand', 'frame', 'attribute'])
 
 
-    #Create a smaller dataframe with the columns of interest (chr, start-end sight, and attribute)
+    # Create a smaller dataframe with the columns of interest (chr, start-end sight, and attribute)
 
 
     gencode_genes = gencode[(gencode.feature == "gene")][['seqname', 'start', 'end', 'attribute']]
 
-    #Resetting the index
+    # Resetting the index
     gencode_genes.reset_index(drop= True, inplace = True)
 
     gen_id_version_list = []
@@ -118,7 +118,7 @@ def prev():
     gen_name_list = []
     gen_biotype_list = []
 
-    #Taking certain infos from attribute column
+    # Taking certain infos from attribute column
 
     for i in range(len(gencode_genes)):
         g_id = gencode_genes['attribute'][i].split(';')[0].split(' ')[1].replace('"', '')
@@ -139,7 +139,7 @@ def prev():
             gen_biotype = gencode_genes['attribute'][i].split(';')[3].split(' ')[2].replace('"', '')
             gen_biotype_list.append(gene_biotype)
 
-    #Adding everything to the GENCODE_GENES dataframe and removing the attribute column
+    # Adding everything to the GENCODE_GENES dataframe and removing the attribute column
 
     gencode_genes['gen_version'] = gen_id_version_list
     gencode_genes['gen_id'] = gen_id_list
@@ -148,7 +148,7 @@ def prev():
 
     gencode_genes.drop(['attribute'], inplace = True, axis=1)
 
-    #Merging the dataframes from TCGA and GENCODE, creating a new one that contains only the common genes
+    # Merging the dataframes from TCGA and GENCODE, creating a new one that contains only the common genes
 
     tcga_id_list = []
 
@@ -162,9 +162,9 @@ def prev():
     common_df = common_df.loc[common_df['gen_id'].isin(tcga_df['Gene id'])]
     common_df.reset_index(drop= True, inplace = True)
 
-    #Sorting by chromosome
+    # Sorting by chromosome
     common_df = pd.read_csv('/media/gina/9A53-2BCF/gina/aimiliosmegas.csv', sep ='\t', header = None, names = ["Chromosome", "Start", "End", "Gene Version", "Gene Id", "Gene Name", "Gene Biotype"])
-    #Creating the final df by combining common_df and tcga_df (with the selected genes)
+    # Creating the final df by combining common_df and tcga_df (with the selected genes)
 
     final_gene_list = []
     final_gene_list = common_df['Gene Id'].to_list()
@@ -392,7 +392,7 @@ def prev():
     sns.set(rc={'figure.figsize':(15.7,8.27)})
     sns.boxplot(x='Chromosomes', y='Correlation', data=data_melted,linewidth=1, showfliers = False).set_title('Infiltrating Duct Carcinoma Correlations')
 
-    # BOXPLOT FOR LOBULAR VARIANCE 
+    # BOXPLOT FOR LOBULAR VARIANCE
     data = pd.DataFrame((lobular_variance[0]), columns = ['Chr1'])
     data['Chr1'] = data['Chr1'].fillna(0)
     for i in range(len(lobular_variance)):
@@ -413,9 +413,9 @@ def prev():
     sns.despine(left=True)
     sns.set(rc={'figure.figsize':(15.7,8.27)})
     sns.boxplot(x='Chromosomes', y='Variance', data=data_melted,linewidth=1, showfliers = False).set_title('Lobular Carcinoma Variance')
-    
+
     #BOXPLOT FOR INFILTRATING VARIANCE
-                                               
+
     data = pd.DataFrame((infiltrating_variance[0]), columns = ['Chr1'])
     data['Chr1'] = data['Chr1'].fillna(0)
     for i in range(len(infiltrating_variance)):
@@ -436,8 +436,8 @@ def prev():
     sns.despine(left=True)
     sns.set(rc={'figure.figsize':(15.7,8.27)})
     sns.boxplot(x='Chromosomes', y='Variance', data=data_melted,linewidth=1, showfliers = False).set_title('Infiltrating Duct Carcinoma Variance')
-                                                           
-    
+
+
     #lineplots for lobular correlation
 
 
@@ -557,44 +557,93 @@ for d in gp_chrom:
 
 ttests = [ttest_ind(c1, c2, axis=1) for c1, c2 in zip(list(seg_counts_pchr_pcan[0].values()), list(seg_counts_pchr_pcan[1].values()))]
 
+itoname = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+            '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+            '21', '22', 'MT', 'X',  'Y']
 
-for i in enumerate(ttests):
-    print(type(i))
 
-sig_pv = []
-unsig_pv = []
 for ch_i, ch in enumerate(ttests):
-    for pv_i, pv in enumerate(ch[1]):
-        if pv <= 0.05:
-            sig_pv.append((ch_i, pv_i, ch[0][pv_i]))
-        else:
-            unsig_pv.append((ch_i, pv_i, ch[0][pv_i]))
-
-   
-   
-   data = pd.DataFrame((sig_pv[0][2]), columns = [sig_pv[0][1]])
-    data['ch'] = data['ch'].fillna(0)
-    data['pvalue'] = unsig_pv[0][2]
     
-for i in enumerate(sig_pv[0]):
+    cor = [(i + 1, v) for i, v in enumerate(ch[1]) if not np.isnan(v) and v <= 0.05]
     
-    data = data.rename(columns={'variable': 'Segment', 'value': 'P-value'})
+    total_count = len(ch[1])
+    sig_count = len(cor)
     
-    sns.set_style("whitegrid")
-    sns.despine(left=True)
+    sig_percent = (sig_count/total_count) * 100
+    
+    print(f"{sig_percent:.2f} %")
+    
+    plt.style.use('seaborn')
+    plt.title(f"Chromosome {itoname[ch_i]}")
+    plt.xlabel("Segment")
+    plt.ylabel("Pvalue")
+    plt.scatter(x=[s for s, _ in cor], y=[pv for _, pv in cor], marker="o", s=3)
+    plt.gca().axes.get_xaxis().set_visible(True)
+    plt.show()
+    
+    plt.style.use('classic')
+    plt.title(f"Chromosome {itoname[ch_i]} pvalue counts")
+    plt.xlabel("")
+    plt.ylabel("%")
+    plt.bar(x=[1, 2], height=[sig_percent, 100 - sig_percent], align='center', color=['orange', 'blue'])
+    plt.gca().axes.get_xaxis().set_visible(False)
+    plt.show()
 
-    sns.set(rc={'figure.figsize':(15.7,8.27)})
-    palette = ['#FF2709', '#09FF10', '#0030D7', '#FA70B5']
-    sns.scatterplot(data = data , x = "Segmnet", y = "P-value")
 
- plt.show()
 
-data = pd.DataFrame(sig_pv[0][2])
+# temp = ttests[0][1]
+# np.nan_to_num(temp, copy=False)
 
-for i in enumerate(sig_pv):
-    if sig_pv[0] = 0:
-        data = pd.DataFrame(sig_pv[i][])
-        data['Correlation'] = lob_average_cor_list[i]
+# test = [i for i in range(len(temp))]
+
+# plt.xlabel("Segment")
+# plt.ylabel("Pvalue")
+# plt.scatter(x=range(len(temp)), y=temp, s=1)
+# plt.show()
+
+
+# pv_sig   = []
+# pv_unsig = []
+# for ch_i, data in enumerate(ttests):
+#     for pv_i, pv in enumerate(data[1]):
+#         if pv <= 0.05:
+#             pv_sig.append((pv_i, pv))
+#         else:
+#             pv_unsig.append((pv_i, pv))
+
+
+
+# sig_pv = []
+# unsig_pv = []
+# for ch_i, ch in enumerate(ttests):
+#     for pv_i, pv in enumerate(ch[1]):
+#         if pv <= 0.05:
+#             sig_pv.append((ch_i, pv_i, ch[0][pv_i]))
+#         else:
+#             unsig_pv.append((ch_i, pv_i, ch[0][pv_i]))
+
+#     data = pd.DataFrame((sig_pv[0][2]), columns = [sig_pv[0][1]])
+#     data['ch'] = data['ch'].fillna(0)
+#     data['pvalue'] = unsig_pv[0][2]
+
+# for i in enumerate(sig_pv[0]):
+
+#     data = data.rename(columns={'variable': 'Segment', 'value': 'P-value'})
+
+#     sns.set_style("whitegrid")
+#     sns.despine(left=True)
+
+#     sns.set(rc={'figure.figsize':(15.7,8.27)})
+#     palette = ['#FF2709', '#09FF10', '#0030D7', '#FA70B5']
+#     sns.scatterplot(data = data , x = "Segmnet", y = "P-value")
+
+# plt.show()
+
+# data = pd.DataFrame(sig_pv[0][2])
+# for i in enumerate(sig_pv):
+#     if sig_pv[0] == 0:
+#         data = pd.DataFrame(sig_pv[i][])
+#         data['Correlation'] = lob_average_cor_list[i]
 
 
 
