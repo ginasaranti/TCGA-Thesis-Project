@@ -1,6 +1,9 @@
 from os import listdir
 from os.path import isfile, join
-import scipy
+from matplotlib import pyplot as plt
+from pprint import pprint
+from scipy.interpolate import make_interp_spline
+from scipy.interpolate import interp1d
 from scipy.stats import ttest_ind
 import seaborn as sns
 import pandas as pd
@@ -9,8 +12,10 @@ import itertools
 import os
 import statistics
 import natsort
-from matplotlib import pyplot as plt
-from pprint import pprint
+import scipy
+
+chrom_list = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','X','Y','MT']
+
 
 def prev():
 
@@ -57,6 +62,15 @@ def prev():
 
             total_variance_list.append(variance_list)
         return total_variance_list
+    
+
+
+    def separated_chr(df):
+        subdf_list = []
+        for i in chrom_list:
+            subdf_list.append(df[df['Chromosome'] == i])
+        return subdf_list
+
 
 
 
@@ -342,8 +356,11 @@ def prev():
     inf_subdf = separated_chr(infiltrating_duct_carcinoma_counts_df)
 
     lobular_carcinoma_counts_df.to_csv('lobular', sep = '\t')
+    
     infiltrating_duct_carcinoma_counts_df.to_csv('infiltrating', sep='\t')
+    
     #Variance
+    
     lobular_variance = variance(lobular_carcinoma_counts_df)
     infiltrating_variance = variance(infiltrating_duct_carcinoma_counts_df)
 
@@ -444,16 +461,21 @@ def prev():
     for i in range(len(lob_average_cor_list)):
 
         data = pd.DataFrame(lob_subdf[i]["Start"])
-        data['Correlation'] = lob_average_cor_list[i]
+        kernel_size = 100
+        kernel = np.ones(kernel_size) / kernel_size
+        data_convolved = np.convolve(lob_average_cor_list[i], kernel, mode='same')
+        data['Correlation'] = data_convolved
+        data = data.rename(columns={'Start': 'Starting Position of Genes on Chromosome', 'value': 'Correlation'})
+        
         figure = plt.figure()
         if i <= 21:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome ' + str(i + 1)))
+            sns.lineplot(x = 'Starting Position of Genes on Chromosome' , y= 'Correlation',data=data, linewidth=1).set(title=('Lobular Carcinoma - Chromosome ' + str(i + 1)))
         elif i == 22:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome X'))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('Chromosome X'))
         elif i == 23:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome Y'))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('Chromosome Y'))
         elif i == 24:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('MT'))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('MT'))
 
         plt.savefig('CHR' + str(i +1) + ".png")
 
@@ -462,26 +484,23 @@ def prev():
     for i in range(len(inf_average_cor_list)):
 
         data = pd.DataFrame(inf_subdf[i]["Start"])
-        data['Correlation'] = inf_average_cor_list[i]
+        kernel_size = 100
+        kernel = np.ones(kernel_size) / kernel_size
+        data_convolved = np.convolve(inf_average_cor_list[i], kernel, mode='same')
+        data['Correlation'] = data_convolved
+        data = data.rename(columns={'Start': 'Starting Position of Genes on Chromosome', 'value': 'Correlation'})
+
         figure = plt.figure()
         if i <= 21:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome ' + str(i + 1)))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('Chromosome ' + str(i + 1)))
         elif i == 22:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome X'))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('Chromosome X'))
         elif i == 23:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('Chromosome Y'))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('Chromosome Y'))
         elif i == 24:
-            sns.lineplot(x='Start', y='Correlation', data=data,linewidth=1).set(title=('MT'))
+            sns.lineplot(x='Starting Position of Genes on Chromosome', y='Correlation', data=data,linewidth=1).set(title=('MT'))
 
         plt.savefig('CHR' + str(i +1) + ".png")
-
-
-
-    def separated_chr(df):
-        subdf_list = []
-        for i in chrom_list:
-            subdf_list.append(df[df['Chromosome'] == i])
-        return subdf_list
 
 #gene_names_per_chr = []
 #for number in chrom_list:
@@ -504,7 +523,7 @@ def separate_chroms(df):
 
 
 def segment(df):
-    window = 10_000
+    window = 100_000
     curr_bound = 2 * window
     seg_num = 0
 
@@ -539,6 +558,7 @@ def segment(df):
 
     return segments
 
+
 ########################################################################################################################################
 
 cancers = [None, None]
@@ -547,19 +567,21 @@ cancers[1] = pd.read_csv(os.getcwd() + '/lobular.csv',      dtype={'Chromosome':
 
 gp_chrom = []
 for df in cancers:
-    #df.Chromosome = df.Chromosome.astype(str)
+    #df.Chromosome = df.Chromosome.astype(str)<
     gp_chrom.append(separate_chroms(df))
 
 seg_counts_pchr_pcan = []
 for d in gp_chrom:
     seg_counts_pchr_pcan.append({key: segment(value) for key, value in d.items()})
+    
     print( "===========================================")
-
+    
+    
+    
+    
 ttests = [ttest_ind(c1, c2, axis=1) for c1, c2 in zip(list(seg_counts_pchr_pcan[0].values()), list(seg_counts_pchr_pcan[1].values()))]
 
-itoname = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
-            '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
-            '21', '22', 'MT', 'X',  'Y']
+itoname = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10','11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'MT', 'X',  'Y']
 
 
 for ch_i, ch in enumerate(ttests):
@@ -575,21 +597,49 @@ for ch_i, ch in enumerate(ttests):
     
     plt.style.use('seaborn')
     plt.title(f"Chromosome {itoname[ch_i]}")
-    plt.xlabel("Segment")
+    plt.xlabel("Coordinates on Chromosome")
     plt.ylabel("Pvalue")
     plt.scatter(x=[s for s, _ in cor], y=[pv for _, pv in cor], marker="o", s=3)
     plt.gca().axes.get_xaxis().set_visible(True)
     plt.show()
     
-    plt.style.use('classic')
-    plt.title(f"Chromosome {itoname[ch_i]} pvalue counts")
-    plt.xlabel("")
-    plt.ylabel("%")
-    plt.bar(x=[1, 2], height=[sig_percent, 100 - sig_percent], align='center', color=['orange', 'blue'])
+sig_percent_list = []
+unsig_percent_list = []    
+for ch_i, ch in enumerate(ttests):
+    cor = [(i + 1, v) for i, v in enumerate(ch[1]) if not np.isnan(v) and v <= 0.05]
+    
+    total_count = len(ch[1])
+    sig_count = len(cor)
+    
+    sig_percent = (sig_count/total_count) * 100
+    unsig_percent = 100 - sig_percent
+     
+    sig_percent_list.append(sig_percent)
+    unsig_percent_list.append(unsig_percent)
+    
+    
+percent_df = pd.DataFrame(chrom_list, columns = ['Chromosome'])    
+percent_df['Sig_percent'] = sig_percent_list    
+percent_df['Unsig_percent'] = unsig_percent_list      
+
+sns.factorplot(x='Chromosome', y='', hue='sex', data=df, kind='bar')    
+    
+    
+    
+    plt.style.use('seaborn')
+    plt.title(f"Chromosome {itoname[ch_i]}")
+    plt.xlabel("p-value")
+    plt.ylabel("Percent of genes")
+    plt.bar(x=[1, 2], height=[sig_percent, 100 - sig_percent], align='center', color=['pink', 'blue'])
     plt.gca().axes.get_xaxis().set_visible(False)
     plt.show()
 
-
+plt.bar(r, Women, color = 'b',
+        width = width, edgecolor = 'black',
+        label='Women')
+plt.bar(r + width, Men, color = 'g',
+        width = width, edgecolor = 'black',
+        label='Men')
 
 # temp = ttests[0][1]
 # np.nan_to_num(temp, copy=False)
@@ -644,8 +694,5 @@ for ch_i, ch in enumerate(ttests):
 #     if sig_pv[0] == 0:
 #         data = pd.DataFrame(sig_pv[i][])
 #         data['Correlation'] = lob_average_cor_list[i]
-
-
-
 
 
