@@ -571,12 +571,22 @@ for df in cancers:
     gp_chrom.append(separate_chroms(df))
 
 seg_counts_pchr_pcan = []
+# 2 iterations for the 2 cancers
+
+starts = []
 for d in gp_chrom:
-    seg_counts_pchr_pcan.append({key: segment(value) for key, value in d.items()})
+    seg_counts_pchr_pcan.append({key: segment(value_df) for key, value_df in d.items()})
+
+    # parallel enumerate the chromosome df and the list of segments 
+    for value_df, seg_list in zip(d.values(), segments_list)
+        # append the 'base' starting position
+        starts.append(value_df.Start[0])
+        
+        # for as many segments there are, increment the current base by 100K to get the next base start 
+        for i in range(len(seg_list)):
+            starts.append(starts[-1] + 100_000)
     
     print( "===========================================")
-    
-    
     
     
 ttests = [ttest_ind(c1, c2, axis=1) for c1, c2 in zip(list(seg_counts_pchr_pcan[0].values()), list(seg_counts_pchr_pcan[1].values()))]
@@ -593,7 +603,7 @@ for ch_i, ch in enumerate(ttests):
     
     sig_percent = (sig_count/total_count) * 100
     
-    print(f"{sig_percent:.2f} %")
+    print(f"{} %")
     
     plt.style.use('seaborn')
     plt.title(f"Chromosome {itoname[ch_i]}")
