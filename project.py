@@ -524,7 +524,7 @@ def separate_chroms(df):
 
 def segment(df):
     window = 100_000
-    curr_bound = 2 * window
+    curr_bound = window
     seg_num = 0
 
     chr_end = df.End.max()
@@ -573,18 +573,25 @@ for df in cancers:
 seg_counts_pchr_pcan = []
 # 2 iterations for the 2 cancers
 
-starts = []
+segment_starts = []
+flag = False 
 for d in gp_chrom:
     seg_counts_pchr_pcan.append({key: segment(value_df) for key, value_df in d.items()})
-
-    # parallel enumerate the chromosome df and the list of segments 
-    for value_df, seg_list in zip(d.values(), segments_list)
-        # append the 'base' starting position
-        starts.append(value_df.Start[0])
+    if not flag:
+        # parallel enumerate the chromosome df and the list of segments 
+        for value_df, seg_list in zip(d.values(), seg_counts_pchr_pcan[-1].values()):
+            starts = []
+            # append the 'base' starting position
+            value_df.reset_index(drop= True, inplace = True)
+            starts.append(value_df['Start'][0])
         
-        # for as many segments there are, increment the current base by 100K to get the next base start 
-        for i in range(len(seg_list)):
-            starts.append(starts[-1] + 100_000)
+            # for as many segments there are, increment the current base by 100K to get the next base start 
+            for i in range(len(seg_list)):
+                starts.append(starts[-1] + 100_000)
+                
+            segment_starts.append(starts)
+        flag = True
+            
     
     print( "===========================================")
     
@@ -594,24 +601,29 @@ ttests = [ttest_ind(c1, c2, axis=1) for c1, c2 in zip(list(seg_counts_pchr_pcan[
 itoname = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10','11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'MT', 'X',  'Y']
 
 
-for ch_i, ch in enumerate(ttests):
+for i in range(len(ttests)):
+    ttests_seg_df = pd.DataFrame(segment_starts[i][:-1], columns = ['Coordinates of Chromosome'])
+    d_convolved = np.convolve(ttests_seg_df['P-value'], kernel, mode='same')
+    ttests_seg_df['P-value'] = ttests[i][1] 
+    ttests_seg_df = ttests_seg_df.fillna(0)
     
-    cor = [(i + 1, v) for i, v in enumerate(ch[1]) if not np.isnan(v) and v <= 0.05]
+    kernel_size = 100
+    kernel = np.ones(kernel_size) / kernel_size
+    ttests_seg_df['P-value'] = d_convolved 
+    ttests_seg_df = ttests_seg_df.dropna()
     
-    total_count = len(ch[1])
-    sig_count = len(cor)
+    figure = plt.figure()
+    sns.set(rc={'figure.figsize':(15.7,8.27)})
+    if i <= 21:
+        sns.lineplot(x='Coordinates of Chromosome', y='P-value', data=ttests_seg_df,linewidth=1).set(title=('Chromosome ' + str(i + 1)))
+    elif i == 22:
+        sns.lineplot(x='Coordinates of Chromosome', y='P-value', data=ttests_seg_df,linewidth=1).set(title=('Chromosome X'))
+    elif i == 23:
+        sns.lineplot(x='Coordinates of Chromosome', y='P-value', data=ttests_seg_df,linewidth=1).set(title=('Chromosome Y'))
+    elif i == 24:
+        sns.lineplot(x='Coordinates of Chromosome', y='P-value', data=ttests_seg_df,linewidth=1).set(title=('MT'))
+
     
-    sig_percent = (sig_count/total_count) * 100
-    
-    print(f"{} %")
-    
-    plt.style.use('seaborn')
-    plt.title(f"Chromosome {itoname[ch_i]}")
-    plt.xlabel("Coordinates on Chromosome")
-    plt.ylabel("Pvalue")
-    plt.scatter(x=[s for s, _ in cor], y=[pv for _, pv in cor], marker="o", s=3)
-    plt.gca().axes.get_xaxis().set_visible(True)
-    plt.show()
     
 sig_percent_list = []
 unsig_percent_list = []    
@@ -628,28 +640,15 @@ for ch_i, ch in enumerate(ttests):
     unsig_percent_list.append(unsig_percent)
     
     
-percent_df = pd.DataFrame(chrom_list, columns = ['Chromosome'])    
-percent_df['Sig_percent'] = sig_percent_list    
-percent_df['Unsig_percent'] = unsig_percent_list      
-
-sns.factorplot(x='Chromosome', y='', hue='sex', data=df, kind='bar')    
-    
-    
-    
     plt.style.use('seaborn')
     plt.title(f"Chromosome {itoname[ch_i]}")
     plt.xlabel("p-value")
     plt.ylabel("Percent of genes")
-    plt.bar(x=[1, 2], height=[sig_percent, 100 - sig_percent], align='center', color=['pink', 'blue'])
+    plt.bar(x=[1,2], height=[sig_percent, 100 - sig_percent], align='center', color=['pink', 'blue'])
     plt.gca().axes.get_xaxis().set_visible(False)
     plt.show()
+        
 
-plt.bar(r, Women, color = 'b',
-        width = width, edgecolor = 'black',
-        label='Women')
-plt.bar(r + width, Men, color = 'g',
-        width = width, edgecolor = 'black',
-        label='Men')
 
 # temp = ttests[0][1]
 # np.nan_to_num(temp, copy=False)
